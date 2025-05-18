@@ -1,4 +1,3 @@
-// app/context/AuthContext.tsx
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase';
@@ -20,13 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user); // Add debug log
       setUser(user);
       setLoading(false);
     });
 
     return () => {
-      console.log('Cleaning up auth listener'); // Add cleanup log
       unsubscribe();
     };
   }, []);
