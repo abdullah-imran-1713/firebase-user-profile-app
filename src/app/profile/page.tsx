@@ -18,8 +18,8 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // Sync state with auth updates
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
@@ -35,7 +35,6 @@ export default function ProfilePage() {
           displayName, 
           photoURL 
         });
-        // Refresh auth state
         await auth.currentUser.reload();
       }
       setIsEditing(false);
@@ -51,16 +50,41 @@ export default function ProfilePage() {
     router.push("/auth/login");
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (ev.target?.result) {
-          setPhotoURL(ev.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      
+      // Update Firebase profile
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          photoURL: data.url
+        });
+        await auth.currentUser.reload();
+        setPhotoURL(data.url); // Update local state
+      }
+      
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -74,13 +98,11 @@ export default function ProfilePage() {
               <Button
                 size="sm"
                 onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                disabled={loading}
+                disabled={loading || uploading}
               >
-                {loading
-                  ? "Saving…"
-                  : isEditing
-                  ? "Save Changes"
-                  : "Edit Profile"}
+                {loading ? 'Saving...' : 
+                 uploading ? 'Uploading...' :
+                 isEditing ? 'Save Changes' : 'Edit Profile'}
               </Button>
               <Button size="sm" variant="outline" onClick={handleLogout}>
                 Logout
@@ -94,7 +116,11 @@ export default function ProfilePage() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src={photoURL} alt="Profile picture" />
                   <AvatarFallback>
-                    <Skeleton className="w-24 h-24 rounded-full" />
+                    {uploading ? (
+                      <Skeleton className="w-24 h-24 rounded-full" />
+                    ) : (
+                      user?.email?.[0].toUpperCase()
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
@@ -104,6 +130,7 @@ export default function ProfilePage() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleAvatarChange}
+                    disabled={uploading}
                   />
                 )}
               </label>
@@ -114,9 +141,8 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <Input
                       value={displayName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setDisplayName(e.target.value)
-                      }
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      disabled={uploading}
                     />
                   ) : (
                     <p className="text-gray-700">
@@ -127,7 +153,7 @@ export default function ProfilePage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
-                  <p className="text-gray-700">{user?.email}</p>
+                  <p className="text-gray-700 break-all">{user?.email}</p>
                 </div>
               </div>
             </div>
@@ -138,7 +164,7 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 onClick={() => setIsEditing(false)}
-                disabled={loading}
+                disabled={loading || uploading}
               >
                 Cancel
               </Button>

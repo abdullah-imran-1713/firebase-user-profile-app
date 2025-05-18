@@ -1,4 +1,3 @@
-// components/ProtectedRoute.tsx
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,7 +8,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const router = useRouter();
 
   useEffect(() => {
-    console.log('ProtectedRoute check:', { user, loading }); // Debug log
     if (!loading && !user) {
       console.log('Redirecting to login');
       router.push('/auth/login');

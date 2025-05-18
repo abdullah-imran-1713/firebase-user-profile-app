@@ -1,9 +1,6 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-// 1️⃣ Import your provider
 import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
@@ -31,7 +28,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 2️⃣ Wrap everything in AuthProvider */}
         <AuthProvider>
           {children}
         </AuthProvider>
