@@ -92,6 +92,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="remember"
+                  className='cursor-pointer'
                   checked={rememberMe}
                   onCheckedChange={(value) => setRememberMe(Boolean(value))}
                 />
@@ -102,7 +103,7 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full cursor-pointer" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
@@ -116,7 +117,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+          <Button variant="outline" className="w-full cursor-pointer" onClick={handleGoogleLogin}>
             <svg
               className="mr-2 h-4 w-4"
               xmlns="http://www.w3.org/2000/svg"

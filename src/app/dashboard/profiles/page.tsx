@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { db } from '@/lib/firebase';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -25,37 +26,33 @@ export default function ProfilesPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!user) return;
     const fetchProfiles = async () => {
+      setLoading(true);
       try {
-        if (!user) return;
-
-        const profilesRef = collection(db, 'profiles');
-        // Exclude current user's profile
-        const q = query(profilesRef, where('uid', '!=', user.uid));
-        const querySnapshot = await getDocs(q);
-
-        const profilesData: Profile[] = [];
-        querySnapshot.forEach((doc) => {
-          profilesData.push(doc.data() as Profile);
+        const ref = collection(db, 'profiles');
+        const q = query(ref, where('uid', '!=', user.uid));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => {
+          const d = doc.data() as Omit<Profile, 'uid'>;
+          return { uid: doc.id, ...d };
         });
-
-        setProfiles(profilesData);
+        setProfiles(data);
         setError('');
-      } catch (err) {
-        console.error('Error fetching profiles:', err);
+      } catch (e) {
+        console.error(e);
         setError('Failed to load profiles');
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfiles();
   }, [user]);
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {[1, 2, 3].map((i) => (
+        {[1,2,3].map(i => (
           <Card key={i}>
             <CardContent className="p-4 space-y-4">
               <Skeleton className="h-8 w-32" />
@@ -67,54 +64,45 @@ export default function ProfilesPage() {
       </div>
     );
   }
-
   if (error) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-red-500">{error}</p>
-      </div>
-    );
+    return <p className="p-4 text-red-500">{error}</p>;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {profiles.map((profile) => (
-        <Card key={profile.uid} className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={profile.photoURL} />
-              <AvatarFallback>
-                {profile.email?.[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">{profile.username || 'No username'}</h3>
-              <p className="text-sm text-muted-foreground truncate">
-                {profile.email}
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm">Age:</span>
-              <span className="text-sm font-medium">
-                {profile.age || 'Not specified'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm">Gender:</span>
-              <span className="text-sm font-medium capitalize">
-                {profile.gender || 'Not specified'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm">Location:</span>
-              <span className="text-sm font-medium truncate">
-                {profile.location || 'Not specified'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      {profiles.map(p => (
+        <Link
+          key={p.uid}
+          href={`/dashboard/profiles/${p.uid}`}
+          className="block hover:shadow-lg transition-shadow"
+        >
+          <Card>
+            <CardHeader className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={p.photoURL} />
+                <AvatarFallback>{p.email?.[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="font-semibold">{p.username || 'No username'}</h3>
+                <p className="text-sm text-muted-foreground truncate">{p.email}</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Age:</span>
+                <span className="text-sm font-medium">{p.age ?? '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Gender:</span>
+                <span className="text-sm font-medium capitalize">{p.gender ?? '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Location:</span>
+                <span className="text-sm font-medium truncate">{p.location ?? '—'}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   );
