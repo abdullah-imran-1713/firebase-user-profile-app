@@ -7,21 +7,44 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem,} from '@/components/ui/select';
 import { auth, googleProvider } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
+import { db } from '@/lib/firebase'; // Make sure you've initialized Firestore
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
+  const [location, setLocation] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+
     try {
+      // Basic validation
+      if (!termsAccepted) {
+        throw new Error('You must accept the terms and conditions');
+      }
+
+      if (!username || !email || !password || !age || !gender || !location) {
+        throw new Error('All fields are required');
+      }
+
+      const ageNumber = parseInt(age);
+      if (isNaN(ageNumber) || ageNumber < 13 || ageNumber > 120) {
+        throw new Error('Please enter a valid age (13-120)');
+      }
+
       // Create user with email/password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -30,27 +53,53 @@ export default function SignupPage() {
         displayName: username
       });
 
+      // Create user document in Firestore
+      await setDoc(doc(db, 'profiles', userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        username,
+        age: parseInt(age),
+        gender,
+        location,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       // Refresh auth state
       await userCredential.user.reload();
       
-      router.push('/profile');
+      router.push('/dashboard');
     } catch (err) {
-      setError('Error creating account');
+      setError(err instanceof Error ? err.message : 'Error creating account');
       console.error('Signup error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-const handleGoogleSignup = async () => {
-  try {
-    await signInWithPopup(auth, googleProvider);
-    router.push('/profile');
-  } catch (err) {
-    setError('Google sign-up failed');
-    console.error('Google signup error:', err);
-  }
-};
+  const handleGoogleSignup = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Create user document in Firestore for Google signup
+      await setDoc(doc(db, 'profiles', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        createdAt: new Date(),
+        // Google users can fill other details later
+        age: null,
+        gender: null,
+        location: null,
+      });
+
+      router.push('/dashboard');
+    } catch (err) {
+      setError('Google sign-up failed');
+      console.error('Google signup error:', err);
+    }
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -97,8 +146,53 @@ const handleGoogleSignup = async () => {
               </p>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="18"
+                  min="13"
+                  max="120"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer-not">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="City, Country"
+              />
+            </div>
+
             <div className="flex items-center space-x-2">
-              <Checkbox id="terms" />
+              <Checkbox 
+                id="terms" 
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(Boolean(checked))}
+              />
               <Label htmlFor="terms" className="text-sm">
                 I agree to the{' '}
                 <Button variant="link" size="sm" asChild>
