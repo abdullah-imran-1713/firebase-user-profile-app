@@ -4,8 +4,10 @@ import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function DashboardLayout({
   children,
@@ -14,6 +16,7 @@ export default function DashboardLayout({
 }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     {
@@ -24,16 +27,29 @@ export default function DashboardLayout({
       name: 'Your Profile',
       href: '/dashboard/profile',
     },
+    {
+      name: 'Profiles',
+      href: '/dashboard/profiles',
+    },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/auth/login');
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+  };
 
   return (
     <ProtectedRoute>
       <div className="flex min-h-screen w-full">
         {/* Sidebar */}
-        <div className="hidden w-64 border-r bg-muted/40 md:block">
-          <div className="flex h-full max-h-screen flex-col gap-2 p-4">
+        <div className="hidden w-64 border-r bg-muted/40 md:flex md:flex-col">
+          <div className="flex flex-col h-full p-4 gap-2">
             <div className="mb-4 px-2">
-              <h2 className="text-xl font-semibold">Dashboard</h2>
+              <h2 className="text-xl font-semibold">User Profile App</h2>
               <p className="text-sm text-muted-foreground truncate">
                 {user?.email}
               </p>
@@ -44,7 +60,7 @@ export default function DashboardLayout({
                   <Button
                     variant="ghost"
                     className={cn(
-                      'w-full justify-start',
+                      'w-full justify-start cursor-pointer hover:bg-[#DDDD]',
                       pathname === item.href && 'bg-accent'
                     )}
                   >
@@ -52,6 +68,15 @@ export default function DashboardLayout({
                   </Button>
                 </Link>
               ))}
+            </div>
+            <div className="mt-auto px-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start cursor-pointer hover:bg-[#DDDD]"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
             </div>
           </div>
         </div>

@@ -36,7 +36,7 @@ export default function LoginPage() {
       const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
       await setPersistence(auth, persistence);
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/profile');
+      router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
@@ -50,7 +50,7 @@ export default function LoginPage() {
       const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
       await setPersistence(auth, persistence);
       await signInWithPopup(auth, googleProvider);
-      router.push('/profile');
+      router.push('/dashboard');
     } catch (err) {
       console.error('Google login error:', err);
       setError('Google login failed');
