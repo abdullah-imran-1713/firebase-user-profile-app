@@ -58,9 +58,9 @@ export default function DashboardLayout({
               {navItems.map((item) => (
                 <Link href={item.href} key={item.href}>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     className={cn(
-                      'w-full justify-start cursor-pointer hover:bg-[#DDDD]',
+                      'w-full mt-2 justify-start cursor-pointer hover:bg-[#DDDD]',
                       pathname === item.href && 'bg-accent'
                     )}
                   >
