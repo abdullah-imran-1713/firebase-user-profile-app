@@ -243,7 +243,6 @@ export default function ProfilePage() {
           </CardFooter>
         </Card>
 
-        {/* Modal with blurred background and close button */}
         {isModalOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm"
