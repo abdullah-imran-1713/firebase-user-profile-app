@@ -99,7 +99,7 @@ export default function OtherProfilePage() {
         </div>
       </div>
 
-      {/* Modal for full-size avatar */}
+      {/* Modal for full-size display picture */}
       {isModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm"
