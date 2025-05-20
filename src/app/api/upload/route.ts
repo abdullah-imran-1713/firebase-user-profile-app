@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/cloudinary';
 
+interface UploadResult {
+  secure_url: string;
+  [key: string]: unknown;
+}
+
 type CloudinaryError = {
   message: string;
   http_code?: number;
@@ -39,12 +44,12 @@ export async function POST(request: Request) {
     }
 
     // Use the imported uploadImage function
-    const result = await uploadImage(file);
-    console.log('Upload result:', result);
-    return NextResponse.json({
-      success: true,
-      url: result.secure_url
-    });
+    const result = (await uploadImage(file)) as UploadResult;
+  console.log('Upload result:', result);
+  return NextResponse.json({
+    success: true,
+    url: result.secure_url,
+  });
 
   } catch (error) {
     // Type guard for Cloudinary errors
